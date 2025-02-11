@@ -37,9 +37,20 @@ def draw_board():
         text = font.render(chr(65 + col), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
         screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 80))
 
-    pygame.draw.rect(screen, pygame.Color("gray"), display_board.UNDO_BUTTON)
+
+def draw_button():
+    mouse_x, mouse_y = pygame.mouse.get_pos()
+
+    if display_board.UNDO_BUTTON.collidepoint(mouse_x, mouse_y):
+        color = pygame.Color("darkgray")
+    else:
+        color = pygame.Color("gray")
+
+    pygame.draw.rect(screen, color, display_board.UNDO_BUTTON, border_radius=30)
     undo_text = pygame.font.Font(None, 30).render("Undo", True, pygame.Color("white"))
-    screen.blit(undo_text, (display_board.WIDTH - 95, 60))
+    text_rect = undo_text.get_rect(center=display_board.UNDO_BUTTON.center)
+    screen.blit(undo_text, text_rect)
+
 
 # Drawing the pieces
 def draw_pieces():
@@ -99,6 +110,7 @@ while running:
 
     draw_board()
     draw_pieces()
+    draw_button()
     pygame.display.flip()
 
 pygame.quit()
