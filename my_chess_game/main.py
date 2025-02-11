@@ -1,6 +1,6 @@
 import pygame
 import chess
-from metrix import DisplayMetrix
+from metrics import DisplayMetrix
 
 pygame.init()
 
