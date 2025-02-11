@@ -1,28 +1,16 @@
 import pygame
 import chess
+from metrix import DisplayMetrix
 
 pygame.init()
 
-# Размери на дъската и добавени полета за координатите
-SQUARE_SIZE = 80
-BOARD_SIZE = SQUARE_SIZE * 8
-EXTRA_SPACE = 40  # Разстояние за буквите и цифрите
-WIDTH, HEIGHT = BOARD_SIZE + EXTRA_SPACE, BOARD_SIZE + EXTRA_SPACE
+display_board = DisplayMetrix()
+display_board.transform_symbols_into_image()
 
-# Зареждане на изображенията на фигурите и оразмеряване
-piece_images = {}
-piece_symbols = ['r', 'n', 'b', 'q', 'k', 'p', 'wR', 'wN', 'wB', 'wQ', 'wK', 'wP']
-scaled_size = int(SQUARE_SIZE * 0.85)
-
-for symbol in piece_symbols:
-    piece_images[symbol] = pygame.transform.scale(
-        pygame.image.load(f"pieces/{symbol}.svg"), (scaled_size, scaled_size)
-    )
-
-# Инициализация на дъската
+# Desk starting
 board = chess.Board()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Lokomotiv Plovdiv Chess Game")
+screen = pygame.display.set_mode((display_board.WIDTH, display_board.HEIGHT))
+pygame.display.set_caption(display_board.NAME_OF_THE_BOARD)
 
 # Функция за рисуване на дъската с буквите и цифрите
 def draw_board():
@@ -35,22 +23,22 @@ def draw_board():
         for col in range(8):
             color = colors[(row + col) % 2]
             pygame.draw.rect(screen, color, pygame.Rect(
-                col * SQUARE_SIZE + EXTRA_SPACE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE
+                col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE, row * display_board.SQUARE_SIZE, display_board.SQUARE_SIZE, display_board.SQUARE_SIZE
             ))
 
     # Рисуване на цифрите (отстрани)
     for row in range(8):
         text = font.render(str(8 - row), True, pygame.Color("white"))
-        screen.blit(text, (10, row * SQUARE_SIZE + SQUARE_SIZE // 3))
+        screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
 
     # Рисуване на буквите (отдолу)
     for col in range(8):
         text = font.render(chr(65 + col), True, pygame.Color("white"))
-        screen.blit(text, (col * SQUARE_SIZE + EXTRA_SPACE + SQUARE_SIZE // 3, HEIGHT - 30))
+        screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 30))
 
 # Функция за рисуване на фигурите
 def draw_pieces():
-    offset = (SQUARE_SIZE - scaled_size) // 2  # Центриране в квадратите
+    offset = (display_board.SQUARE_SIZE - display_board.SCALED_SIZE) // 2  # Центриране в квадратите
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
@@ -58,9 +46,9 @@ def draw_pieces():
             row, col = divmod(square, 8)
             symbol = f"w{piece.symbol().upper()}" if piece.color == chess.WHITE else piece.symbol()
 
-            screen.blit(piece_images[symbol], (
-                col * SQUARE_SIZE + EXTRA_SPACE + offset,
-                (7 - row) * SQUARE_SIZE + offset
+            screen.blit(display_board.PIECE_IMAGES[symbol], (
+                col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + offset,
+                (7 - row) * display_board.SQUARE_SIZE + offset
             ))
 
 # Основен цикъл
@@ -74,8 +62,8 @@ while running:
 
         elif event.type == pygame.MOUSEBUTTONDOWN:
             x, y = event.pos
-            col = (x - EXTRA_SPACE) // SQUARE_SIZE
-            row = 7 - (y // SQUARE_SIZE)
+            col = (x - display_board.EXTRA_SPACE) // display_board.SQUARE_SIZE
+            row = 7 - (y // display_board.SQUARE_SIZE)
             if 0 <= col < 8 and 0 <= row < 8:
                 square = chess.square(col, row)
 
