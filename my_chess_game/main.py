@@ -1,23 +1,25 @@
 import pygame
 import chess
-from metrics import DisplayMetrix
+from metrics import DisplayMetrix, HistoryOfMoves
 
 pygame.init()
 
 display_board = DisplayMetrix()
 display_board.transform_symbols_into_image()
 
+history_of_moves = HistoryOfMoves()
+
 # Desk starting
 board = chess.Board()
-screen = pygame.display.set_mode((display_board.WIDTH, display_board.HEIGHT))
+screen = pygame.display.set_mode((display_board.WIDTH + 50, display_board.HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption(display_board.NAME_OF_THE_BOARD)
 
-# Функция за рисуване на дъската с буквите и цифрите
-def draw_board():
-    colors = [pygame.Color("#D2B48C"), pygame.Color("#8B4513")]
-    font = pygame.font.Font(None, 30)
 
-    screen.fill((50, 50, 50))  # Сив фон за допълнителното пространство
+def draw_board():
+    colors = [pygame.Color(display_board.FIRST_COLOR), pygame.Color(display_board.SECOND_COLOR)]
+    font = pygame.font.Font(None, display_board.FONT_SIZE)
+
+    screen.fill(display_board.ADDITIONAL_COLOR)  # Grey background
 
     for row in range(8):
         for col in range(8):
@@ -25,20 +27,23 @@ def draw_board():
             pygame.draw.rect(screen, color, pygame.Rect(
                 col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE, row * display_board.SQUARE_SIZE, display_board.SQUARE_SIZE, display_board.SQUARE_SIZE
             ))
-
-    # Рисуване на цифрите (отстрани)
+    # Drawing numbers
     for row in range(8):
-        text = font.render(str(8 - row), True, pygame.Color("white"))
+        text = font.render(str(8 - row), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
         screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
 
-    # Рисуване на буквите (отдолу)
+    # Drawing letters
     for col in range(8):
-        text = font.render(chr(65 + col), True, pygame.Color("white"))
-        screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 30))
+        text = font.render(chr(65 + col), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
+        screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 80))
 
-# Функция за рисуване на фигурите
+    pygame.draw.rect(screen, pygame.Color("gray"), display_board.UNDO_BUTTON)
+    undo_text = pygame.font.Font(None, 30).render("Undo", True, pygame.Color("white"))
+    screen.blit(undo_text, (display_board.WIDTH - 95, 60))
+
+# Drawing the pieces
 def draw_pieces():
-    offset = (display_board.SQUARE_SIZE - display_board.SCALED_SIZE) // 2  # Центриране в квадратите
+    offset = (display_board.SQUARE_SIZE - display_board.SCALED_SIZE) // 2  # Put into the center
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
@@ -51,7 +56,8 @@ def draw_pieces():
                 (7 - row) * display_board.SQUARE_SIZE + offset
             ))
 
-# Основен цикъл
+
+# Main loop
 running = True
 selected_square = None
 
@@ -64,17 +70,32 @@ while running:
             x, y = event.pos
             col = (x - display_board.EXTRA_SPACE) // display_board.SQUARE_SIZE
             row = 7 - (y // display_board.SQUARE_SIZE)
+
             if 0 <= col < 8 and 0 <= row < 8:
                 square = chess.square(col, row)
 
                 if selected_square is None:
                     if board.piece_at(square):
                         selected_square = square
+                        legal_moves = [move for move in board.legal_moves if move.from_square == square]
+                        print(f"Позволени ходове за {board.piece_at(square)}: {[board.san(m) for m in legal_moves]}")
+
+                        attacked_squares = board.attacks(square)
+                        attacked_pieces = [(chess.square_name(sq), board.piece_at(sq)) for sq in attacked_squares if
+                                           board.piece_at(sq)]
+
+                        if attacked_pieces:
+                            print(f"Заплашени фигури от {board.piece_at(square)}: {attacked_pieces}")
+                        else:
+                            print(f"{board.piece_at(square)} не заплашва никоя фигура.")
                 else:
                     move = chess.Move(selected_square, square)
                     if move in board.legal_moves:
                         board.push(move)
+                        print(board)
+                        history_of_moves.add_move_in_history(board)
                     selected_square = None
+
 
     draw_board()
     draw_pieces()
