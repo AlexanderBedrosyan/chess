@@ -23,6 +23,8 @@ class DisplayMetrix:
     SECOND_COLOR = "#8B4513"
     ADDITIONAL_COLOR = (50, 50, 50)
     LETTERS_AND_DIGITS_COLOR = "white"
+    FLIP_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 100, 160, 40)
+    IS_FLIPPED = False
 
     def transform_symbols_into_image(self):
         for symbol in self.PIECE_SYMBOLS:
@@ -30,6 +32,11 @@ class DisplayMetrix:
                 pygame.image.load(f"pieces/{symbol}.svg"), (self.SCALED_SIZE, self.SCALED_SIZE)
             )
 
+    def board_flip(self):
+        if self.IS_FLIPPED:
+            self.IS_FLIPPED = False
+            return
+        self.IS_FLIPPED = True
 
 class HistoryOfMoves:
 
