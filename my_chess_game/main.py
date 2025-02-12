@@ -82,6 +82,9 @@ while running:
             col = (x - display_board.EXTRA_SPACE) // display_board.SQUARE_SIZE
             row = 7 - (y // display_board.SQUARE_SIZE)
 
+            if display_board.UNDO_BUTTON.collidepoint(x, y):
+                history_of_moves.undo_last_move(board)
+
             if 0 <= col < 8 and 0 <= row < 8:
                 square = chess.square(col, row)
 
@@ -106,7 +109,6 @@ while running:
                         print(board)
                         history_of_moves.add_move_in_history(board)
                     selected_square = None
-
 
     draw_board()
     draw_pieces()
