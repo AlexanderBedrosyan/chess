@@ -25,17 +25,33 @@ def draw_board():
         for col in range(8):
             color = colors[(row + col) % 2]
             pygame.draw.rect(screen, color, pygame.Rect(
-                col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE, row * display_board.SQUARE_SIZE, display_board.SQUARE_SIZE, display_board.SQUARE_SIZE
+                col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE, row * display_board.SQUARE_SIZE,
+                display_board.SQUARE_SIZE, display_board.SQUARE_SIZE
             ))
-    # Drawing numbers
+
+        # Рисуване на цифрите (обратен ред, ако flipped)
     for row in range(8):
-        text = font.render(str(8 - row), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
+        num = str(8 - row) if not display_board.IS_FLIPPED else str(row + 1) 
+        text = font.render(num, True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
         screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
 
-    # Drawing letters
+    # Рисуване на буквите (обратен ред, ако flipped)
     for col in range(8):
-        text = font.render(chr(65 + col), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
-        screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 80))
+        letter = chr(65 + col) if not display_board.IS_FLIPPED else chr(65 + (7 - col))
+        text = font.render(letter, True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
+        screen.blit(text, (
+            col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3,
+            display_board.HEIGHT - 80
+        ))
+    # # Drawing numbers
+    # for row in range(8):
+    #     text = font.render(str(8 - row), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
+    #     screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
+    #
+    # # Drawing letters
+    # for col in range(8):
+    #     text = font.render(chr(65 + col), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
+    #     screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 80))
 
 
 def draw_button():
@@ -51,6 +67,12 @@ def draw_button():
     text_rect = undo_text.get_rect(center=display_board.UNDO_BUTTON.center)
     screen.blit(undo_text, text_rect)
 
+    flip_color = pygame.Color("darkgray") if display_board.FLIP_BUTTON.collidepoint(mouse_x, mouse_y) else pygame.Color(
+        "gray")
+    pygame.draw.rect(screen, flip_color, display_board.FLIP_BUTTON, border_radius=30)
+    flip_text = pygame.font.Font(None, 30).render("Flip Board", True, pygame.Color("white"))
+    screen.blit(flip_text, flip_text.get_rect(center=display_board.FLIP_BUTTON.center))
+
 
 # Drawing the pieces
 def draw_pieces():
@@ -60,6 +82,11 @@ def draw_pieces():
         piece = board.piece_at(square)
         if piece:
             row, col = divmod(square, 8)
+
+            if display_board.IS_FLIPPED:
+                row = 7 - row
+                col = 7 - col
+
             symbol = f"w{piece.symbol().upper()}" if piece.color == chess.WHITE else piece.symbol()
 
             screen.blit(display_board.PIECE_IMAGES[symbol], (
@@ -84,6 +111,13 @@ while running:
 
             if display_board.UNDO_BUTTON.collidepoint(x, y):
                 history_of_moves.undo_last_move(board)
+
+            elif display_board.FLIP_BUTTON.collidepoint(x, y):
+                display_board.board_flip()
+
+            if display_board.IS_FLIPPED:
+                col = 7 - col  # Обръщаме колоните
+                row = 7 - row
 
             if 0 <= col < 8 and 0 <= row < 8:
                 square = chess.square(col, row)
@@ -116,4 +150,3 @@ while running:
     pygame.display.flip()
 
 pygame.quit()
-
