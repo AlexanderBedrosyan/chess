@@ -39,5 +39,7 @@ class HistoryOfMoves:
     def add_move_in_history(self, last_move):
         self.history.append(last_move)
 
-    def undo_last_move(self):
-        pass
+    def undo_last_move(self, current_board):
+        if self.history:
+            self.history.pop()
+            current_board.pop()
