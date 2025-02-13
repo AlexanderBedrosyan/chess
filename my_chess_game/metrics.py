@@ -24,7 +24,10 @@ class DisplayMetrix:
     ADDITIONAL_COLOR = (50, 50, 50)
     LETTERS_AND_DIGITS_COLOR = "white"
     FLIP_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 100, 160, 40)
+    DRAW_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 150, 160, 40)
     IS_FLIPPED = False
+    DRAWING_MODE = False
+    START_DRAW_POSITION = None
 
     def transform_symbols_into_image(self):
         for symbol in self.PIECE_SYMBOLS:
@@ -38,10 +41,18 @@ class DisplayMetrix:
             return
         self.IS_FLIPPED = True
 
+    def drawing_on_board(self):
+        if self.DRAWING_MODE:
+            self.DRAWING_MODE = False
+            return
+        self.DRAWING_MODE = True
+
+
 class HistoryOfMoves:
 
     def __init__(self):
         self.history = []
+        self.arrows = []
 
     def add_move_in_history(self, last_move):
         self.history.append(last_move)
@@ -50,3 +61,6 @@ class HistoryOfMoves:
         if self.history:
             self.history.pop()
             current_board.pop()
+
+    def add_new_arrow(self, current_tuple):
+        self.arrows.append(current_tuple)
