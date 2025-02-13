@@ -1,11 +1,11 @@
 import pygame
 import chess
 import math
-from metrics import DisplayMetrix, HistoryOfMoves
+from metrics import DisplayMetrics, HistoryOfMoves
 
 pygame.init()
 
-display_board = DisplayMetrix()
+display_board = DisplayMetrics()
 display_board.transform_symbols_into_image()
 
 history_of_moves = HistoryOfMoves()
