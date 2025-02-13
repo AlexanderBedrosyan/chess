@@ -1,5 +1,6 @@
 import pygame
 import chess
+import math
 from metrics import DisplayMetrix, HistoryOfMoves
 
 pygame.init()
@@ -29,13 +30,11 @@ def draw_board():
                 display_board.SQUARE_SIZE, display_board.SQUARE_SIZE
             ))
 
-        # Рисуване на цифрите (обратен ред, ако flipped)
     for row in range(8):
-        num = str(8 - row) if not display_board.IS_FLIPPED else str(row + 1) 
+        num = str(8 - row) if not display_board.IS_FLIPPED else str(row + 1)
         text = font.render(num, True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
         screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
 
-    # Рисуване на буквите (обратен ред, ако flipped)
     for col in range(8):
         letter = chr(65 + col) if not display_board.IS_FLIPPED else chr(65 + (7 - col))
         text = font.render(letter, True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
@@ -43,15 +42,18 @@ def draw_board():
             col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3,
             display_board.HEIGHT - 80
         ))
-    # # Drawing numbers
-    # for row in range(8):
-    #     text = font.render(str(8 - row), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
-    #     screen.blit(text, (10, row * display_board.SQUARE_SIZE + display_board.SQUARE_SIZE // 3))
-    #
-    # # Drawing letters
-    # for col in range(8):
-    #     text = font.render(chr(65 + col), True, pygame.Color(display_board.LETTERS_AND_DIGITS_COLOR))
-    #     screen.blit(text, (col * display_board.SQUARE_SIZE + display_board.EXTRA_SPACE + display_board.SQUARE_SIZE // 3, display_board.HEIGHT - 80))
+
+
+def draw_arrow(start, end, color="white", thickness=2):
+    start = (int(start[0]), int(start[1]))
+    end = (int(end[0]), int(end[1]))
+    pygame.draw.line(screen, pygame.Color(color), start, end, thickness)
+
+
+def draw_arrows():
+    if history_of_moves.arrows:
+        for start, end in history_of_moves.arrows:
+            draw_arrow(start, end, color="white", thickness=2)
 
 
 def draw_button():
@@ -72,6 +74,12 @@ def draw_button():
     pygame.draw.rect(screen, flip_color, display_board.FLIP_BUTTON, border_radius=30)
     flip_text = pygame.font.Font(None, 30).render("Flip Board", True, pygame.Color("white"))
     screen.blit(flip_text, flip_text.get_rect(center=display_board.FLIP_BUTTON.center))
+
+    draw_color = pygame.Color("darkgray") if display_board.DRAW_BUTTON.collidepoint(mouse_x, mouse_y) else pygame.Color(
+        "gray")
+    pygame.draw.rect(screen, draw_color, display_board.DRAW_BUTTON, border_radius=30)
+    draw_text = pygame.font.Font(None, 30).render("Draw", True, pygame.Color("white"))
+    screen.blit(draw_text, draw_text.get_rect(center=display_board.DRAW_BUTTON.center))
 
 
 # Drawing the pieces
@@ -109,6 +117,13 @@ while running:
             col = (x - display_board.EXTRA_SPACE) // display_board.SQUARE_SIZE
             row = 7 - (y // display_board.SQUARE_SIZE)
 
+            if display_board.DRAW_BUTTON.collidepoint(x, y):
+                display_board.drawing_on_board()
+                history_of_moves.arrows = []
+
+            elif display_board.DRAWING_MODE:
+                display_board.START_DRAW_POSITION = event.pos
+
             if display_board.UNDO_BUTTON.collidepoint(x, y):
                 history_of_moves.undo_last_move(board)
 
@@ -143,10 +158,18 @@ while running:
                         print(board)
                         history_of_moves.add_move_in_history(board)
                     selected_square = None
+        elif event.type == pygame.MOUSEMOTION and display_board.START_DRAW_POSITION and display_board.DRAWING_MODE:
+            end_pos = event.pos
+            history_of_moves.arrows.append((display_board.START_DRAW_POSITION, end_pos))
+            display_board.START_DRAW_POSITION = end_pos
+
+        elif event.type == pygame.MOUSEBUTTONUP and display_board.DRAWING_MODE:
+            display_board.START_DRAW_POSITION = None
 
     draw_board()
     draw_pieces()
     draw_button()
+    draw_arrows()
     pygame.display.flip()
 
 pygame.quit()
