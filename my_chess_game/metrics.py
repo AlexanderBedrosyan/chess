@@ -1,7 +1,7 @@
 import pygame
 
 
-class DisplayMetrix:
+class DisplayMetrics:
     """
     Board size and additional params for drawing
     """
