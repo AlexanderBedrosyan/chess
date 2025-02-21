@@ -45,9 +45,23 @@ def draw_board():
 
 
 def draw_arrow(start, end, color="white", thickness=2):
+    arrow_size = display_board.SQUARE_SIZE // 5
     start = (int(start[0]), int(start[1]))
     end = (int(end[0]), int(end[1]))
+
     pygame.draw.line(screen, pygame.Color(color), start, end, thickness)
+
+    dx = end[0] - start[0]
+    dy = end[1] - start[1]
+    angle = math.atan2(dy, dx)
+
+    arrow_p1 = (end[0] - arrow_size * math.cos(angle - math.pi / 6),
+                end[1] - arrow_size * math.sin(angle - math.pi / 6))
+
+    arrow_p2 = (end[0] - arrow_size * math.cos(angle + math.pi / 6),
+                end[1] - arrow_size * math.sin(angle + math.pi / 6))
+
+    pygame.draw.polygon(screen, pygame.Color(color), [end, arrow_p1, arrow_p2])
 
 
 def draw_arrows():
@@ -120,7 +134,6 @@ while running:
             if display_board.DRAW_BUTTON.collidepoint(x, y):
                 display_board.drawing_on_board()
                 history_of_moves.arrows = []
-
             elif display_board.DRAWING_MODE:
                 display_board.START_DRAW_POSITION = event.pos
 
@@ -131,7 +144,7 @@ while running:
                 display_board.board_flip()
 
             if display_board.IS_FLIPPED:
-                col = 7 - col  # Обръщаме колоните
+                col = 7 - col
                 row = 7 - row
 
             if 0 <= col < 8 and 0 <= row < 8:
@@ -158,10 +171,12 @@ while running:
                         print(board)
                         history_of_moves.add_move_in_history(board)
                     selected_square = None
-        elif event.type == pygame.MOUSEMOTION and display_board.START_DRAW_POSITION and display_board.DRAWING_MODE:
-            end_pos = event.pos
-            history_of_moves.arrows.append((display_board.START_DRAW_POSITION, end_pos))
-            display_board.START_DRAW_POSITION = end_pos
+
+        elif event.type == pygame.MOUSEBUTTONUP and display_board.DRAWING_MODE:
+            if display_board.START_DRAW_POSITION:
+                end_pos = event.pos
+                history_of_moves.arrows.append((display_board.START_DRAW_POSITION, end_pos))
+                display_board.START_DRAW_POSITION = None
 
         elif event.type == pygame.MOUSEBUTTONUP and display_board.DRAWING_MODE:
             display_board.START_DRAW_POSITION = None
