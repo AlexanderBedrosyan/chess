@@ -28,6 +28,7 @@ class DisplayMetrics:
     IS_FLIPPED = False
     DRAWING_MODE = False
     START_DRAW_POSITION = None
+    LOGO_SIZE = 50
 
     def transform_symbols_into_image(self):
         for symbol in self.PIECE_SYMBOLS:

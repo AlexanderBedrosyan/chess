@@ -7,6 +7,10 @@ pygame.init()
 
 display_board = DisplayMetrics()
 display_board.transform_symbols_into_image()
+logo_image = pygame.image.load("pieces/chess-logo.png")
+
+logo_image = pygame.transform.scale(logo_image, (display_board.LOGO_SIZE, display_board.LOGO_SIZE))
+pygame.display.set_icon(logo_image)
 
 history_of_moves = HistoryOfMoves()
 
