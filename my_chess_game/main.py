@@ -100,9 +100,16 @@ def draw_button():
     screen.blit(draw_text, draw_text.get_rect(center=display_board.DRAW_BUTTON.center))
 
 
+def draw_message(message, color="red"):
+    font = pygame.font.Font(None, 50)
+    text = font.render(message, True, pygame.Color(color))
+    text_rect = text.get_rect(center=(display_board.WIDTH - 70, 20))
+    screen.blit(text, text_rect)
+
+
 # Drawing the pieces
 def draw_pieces():
-    offset = (display_board.SQUARE_SIZE - display_board.SCALED_SIZE) // 2  # Put into the center
+    offset = (display_board.SQUARE_SIZE - display_board.SCALED_SIZE) // 2
 
     for square in chess.SQUARES:
         piece = board.piece_at(square)
@@ -185,10 +192,17 @@ while running:
         elif event.type == pygame.MOUSEBUTTONUP and display_board.DRAWING_MODE:
             display_board.START_DRAW_POSITION = None
 
+
     draw_board()
     draw_pieces()
     draw_button()
     draw_arrows()
+
+    if board.is_checkmate():
+        draw_message("Checkmate!", "red")
+    elif board.is_check():
+        draw_message("Check!", "orange")
+
     pygame.display.flip()
 
 pygame.quit()
