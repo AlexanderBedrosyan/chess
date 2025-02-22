@@ -125,13 +125,54 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                     (7 - row) * self.display_board.SQUARE_SIZE + offset
                 ))
 
-    def handle_promotion(self, move, figure): # need more functionality
-        if move.promotion is None:
-            if move.to_square in chess.SQUARES_1:
-                move.promotion = chess.QUEEN
-            elif move.to_square in chess.SQUARES_8:
-                move.promotion = chess.QUEEN
-        return move
+    def show_promotion_menu(self, square, color):
+        menu_width = 220
+        menu_height = 70
+        x = self.display_board.WIDTH // 2 - menu_width // 2
+        y = self.display_board.HEIGHT // 2 - menu_height // 2
+
+        promotion_pieces = [
+            chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT
+        ]
+
+        piece_symbols = ["Q", "R", "B", "N"]
+        buttons = []
+
+        for i, piece in enumerate(promotion_pieces):
+            rect = pygame.Rect(x + i * 50, y, 50, 50)
+            buttons.append((rect, piece))
+
+        while True:
+            self.draw_board()
+            self.draw_pieces()
+
+            pygame.draw.rect(self.screen, pygame.Color("gray"), (x, y, menu_width, menu_height), border_radius=10)
+
+            for i, (rect, piece) in enumerate(buttons):
+                symbol = f"w{piece_symbols[i]}" if color == chess.WHITE else piece_symbols[i]
+                self.screen.blit(self.display_board.PIECE_IMAGES[symbol], rect.topleft)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    exit()
+
+                elif event.type == pygame.MOUSEBUTTONDOWN:
+                    mouse_x, mouse_y = event.pos
+                    for rect, piece in buttons:
+                        if rect.collidepoint(mouse_x, mouse_y):
+                            self.board.remove_piece_at(square)
+                            self.board.set_piece_at(square, chess.Piece(piece, color))
+                            return
+
+    def handle_promotion(self, square, current_piece):
+        self.board.remove_piece_at(square)
+        if current_piece.symbol() == 'P':
+            self.board.set_piece_at(square, chess.Piece(chess.QUEEN, chess.WHITE))
+        else:
+            self.board.set_piece_at(square, chess.Piece(chess.QUEEN, chess.BLACK))
 
     def starting_game(self):
         pygame.init()
@@ -168,7 +209,6 @@ class Chess(DisplayMetrics, HistoryOfMoves):
 
                     if 0 <= col < 8 and 0 <= row < 8:
                         square = chess.square(col, row)
-
                         if selected_square is None:
                             if self.board.piece_at(square):
                                 selected_square = square
@@ -184,12 +224,25 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                                     print(f"Заплашени фигури от {self.board.piece_at(square)}: {attacked_pieces}")
                                 else:
                                     print(f"{self.board.piece_at(square)} не заплашва никоя фигура.")
+
                         else:
                             move = chess.Move(selected_square, square)
+                            current_pieces = self.board.piece_at(square)
+                            if move.to_square // 8 == 0 or move.to_square // 8 == 7:
+                                self.board.push(move)
+                                piece = self.board.piece_at(square)
+
+                                if piece and piece.symbol() in ('p', 'P'):
+                                    print(piece)
+                                    self.show_promotion_menu(move.to_square, piece.color)
+                                    # self.handle_promotion(square, current_pieces)
+
                             if move in self.board.legal_moves:
                                 self.board.push(move)
                                 print(self.board)
+
                                 self.history_of_moves.add_move_in_history(self.board)
+
                             selected_square = None
 
                 elif event.type == pygame.MOUSEBUTTONUP and self.display_board.DRAWING_MODE:
