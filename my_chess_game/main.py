@@ -130,7 +130,6 @@ class Chess(DisplayMetrics, HistoryOfMoves):
         menu_height = 70
         x = self.display_board.WIDTH // 2 - menu_width // 2
         y = self.display_board.HEIGHT // 2 - menu_height // 2
-
         promotion_pieces = [
             chess.QUEEN, chess.ROOK, chess.BISHOP, chess.KNIGHT
         ]
@@ -150,6 +149,8 @@ class Chess(DisplayMetrics, HistoryOfMoves):
 
             for i, (rect, piece) in enumerate(buttons):
                 symbol = f"w{piece_symbols[i]}" if color == chess.WHITE else piece_symbols[i]
+                if len(symbol) == 1:
+                    symbol = symbol.lower()
                 self.screen.blit(self.display_board.PIECE_IMAGES[symbol], rect.topleft)
 
             pygame.display.flip()
@@ -233,7 +234,6 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                                 piece = self.board.piece_at(square)
 
                                 if piece and piece.symbol() in ('p', 'P'):
-                                    print(piece)
                                     self.show_promotion_menu(move.to_square, piece.color)
                                     # self.handle_promotion(square, current_pieces)
 
@@ -267,6 +267,7 @@ class Chess(DisplayMetrics, HistoryOfMoves):
             pygame.display.flip()
 
         pygame.quit()
+
 
 game = Chess()
 game.starting_game()
