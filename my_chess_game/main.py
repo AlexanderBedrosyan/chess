@@ -20,7 +20,6 @@ class Chess(DisplayMetrics, HistoryOfMoves):
     screen = pygame.display.set_mode((display_board.WIDTH + 50, display_board.HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption(display_board.NAME_OF_THE_BOARD)
 
-
     def draw_board(self):
         colors = [pygame.Color(self.display_board.FIRST_COLOR), pygame.Color(self.display_board.SECOND_COLOR)]
         font = pygame.font.Font(None, self.display_board.FONT_SIZE)
@@ -215,7 +214,8 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                                 selected_square = square
                                 legal_moves = [move for move in self.board.legal_moves if move.from_square == square]
                                 print(
-                                    f"Позволени ходове за {self.board.piece_at(square)}: {[self.board.san(m) for m in legal_moves]}")
+                                    f"Позволени ходове за {self.board.piece_at(square)}: {[self.board.san(m) for m in legal_moves]}"
+                                )
 
                                 attacked_squares = self.board.attacks(square)
                                 attacked_pieces = [(chess.square_name(sq), self.board.piece_at(sq)) for sq in attacked_squares if
@@ -228,7 +228,6 @@ class Chess(DisplayMetrics, HistoryOfMoves):
 
                         else:
                             move = chess.Move(selected_square, square)
-                            current_pieces = self.board.piece_at(square)
                             if move.to_square // 8 == 0 or move.to_square // 8 == 7:
                                 self.board.push(move)
                                 piece = self.board.piece_at(square)
