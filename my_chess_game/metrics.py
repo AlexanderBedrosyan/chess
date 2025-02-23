@@ -29,6 +29,7 @@ class DisplayMetrics:
     DRAWING_MODE = False
     START_DRAW_POSITION = None
     LOGO_SIZE = 50
+    AI_BUTTON = pygame.Rect(850, 400, 120, 50)
 
     def transform_symbols_into_image(self):
         for symbol in self.PIECE_SYMBOLS:
