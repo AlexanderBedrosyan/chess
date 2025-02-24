@@ -28,31 +28,68 @@ class Chess(DisplayMetrics, HistoryOfMoves):
             score = info["score"].relative.score(mate_score=10000)
             return score
 
-    def convert_score_to_percentage(self, score):
-        if score is None:
-            return 50, 50
+    def calculate_material_balance(self, board):
+        piece_values = {
+            chess.PAWN: 1,
+            chess.KNIGHT: 3,
+            chess.BISHOP: 3,
+            chess.ROOK: 5,
+            chess.QUEEN: 9,
+        }
 
-        if score > 0:
-            white_percentage = 50 + score / 100
-            black_percentage = 50 - score / 100
+        white_material = 0
+        black_material = 0
+
+        for square in chess.SQUARES:
+            piece = board.piece_at(square)
+            if piece:
+                value = piece_values.get(piece.piece_type, 0)
+                if piece.color == chess.WHITE:
+                    white_material += value
+                else:
+                    black_material += value
+
+        return white_material, black_material
+
+    def convert_score_to_percentage(self, score, board):
+        white_material, black_material = self.calculate_material_balance(board)
+        material_diff = white_material - black_material
+
+        if abs(material_diff) >= 10:
+            if material_diff > 0:
+                white_percentage = 95
+                black_percentage = 5
+            else:
+                white_percentage = 5
+                black_percentage = 95
         else:
-            white_percentage = 50 - abs(score) / 100
-            black_percentage = 50 + abs(score) / 100
+            if score is None:
+                return 50, 50
+
+            score = score / 100
+
+            if score > 0:
+                white_percentage = 50 + score
+                black_percentage = 50 - score
+            else:
+                white_percentage = 50 - abs(score)
+                black_percentage = 50 + abs(score)
+
+            white_percentage = max(0, min(100, white_percentage))
+            black_percentage = max(0, min(100, black_percentage))
 
         return white_percentage, black_percentage
 
     def draw_evaluation_bar(self, board):
         current_score = self.evaluate_position(board)
 
-        white_percentage, black_percentage = self.convert_score_to_percentage(current_score)
+        white_percentage, black_percentage = self.convert_score_to_percentage(current_score, board)
 
-        # Можеш да нарисуваш текста на екрана (с Pygame):
         font = pygame.font.SysFont(None, 36)
 
         white_text = font.render(f"White: {white_percentage:.1f}% chance for win", True, (255, 255, 255))
         black_text = font.render(f"Black: {black_percentage:.1f}% chance for win", True, (0, 0, 0))
 
-        # Разположи текстовете на екрана (напр. горе в ляво):
         self.screen.blit(white_text, (10, 10))
         self.screen.blit(black_text, (10, 50))
 
@@ -136,6 +173,13 @@ class Chess(DisplayMetrics, HistoryOfMoves):
         draw_text = pygame.font.Font(None, 30).render("Draw", True, pygame.Color("white"))
         self.screen.blit(draw_text, draw_text.get_rect(center=self.display_board.DRAW_BUTTON.center))
 
+        evaluate_color = pygame.Color("darkgray") if self.display_board.EVALUATE_BUTTON.collidepoint(mouse_x,
+                                                                                                   mouse_y) else pygame.Color(
+            "gray")
+        pygame.draw.rect(self.screen, evaluate_color, self.display_board.EVALUATE_BUTTON, border_radius=30)
+        evaluate_text = pygame.font.Font(None, 30).render("Evaluation", True, pygame.Color("white"))
+        self.screen.blit(evaluate_text, evaluate_text.get_rect(center=self.display_board.EVALUATE_BUTTON.center))
+
     def draw_message(self, message, color="red"):
         font = pygame.font.Font(None, 50)
         text = font.render(message, True, pygame.Color(color))
@@ -218,6 +262,7 @@ class Chess(DisplayMetrics, HistoryOfMoves):
         # Main loop
         running = True
         selected_square = None
+        show_evaluation = False
 
         while running:
             for event in pygame.event.get():
@@ -228,6 +273,13 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                     x, y = event.pos
                     col = (x - self.display_board.EXTRA_SPACE) // self.display_board.SQUARE_SIZE
                     row = 7 - (y // self.display_board.SQUARE_SIZE)
+
+                    if self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
+                        show_evaluation = not show_evaluation
+
+                    if self.display_board.DRAW_BUTTON.collidepoint(x, y):
+                        self.display_board.drawing_on_board()
+                        self.history_of_moves.arrows = []
 
                     if self.display_board.DRAW_BUTTON.collidepoint(x, y):
                         self.display_board.drawing_on_board()
@@ -295,12 +347,14 @@ class Chess(DisplayMetrics, HistoryOfMoves):
             self.draw_pieces()
             self.draw_button()
             self.draw_arrows()
-            self.draw_evaluation_bar(self.board)
+            if show_evaluation:
+                self.draw_evaluation_bar(self.board)
 
             if self.board.is_checkmate():
                 self.draw_message("Checkmate!", "red")
             elif self.board.is_check():
                 self.draw_message("Check!", "orange")
+
 
             pygame.display.flip()
 
