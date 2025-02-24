@@ -25,6 +25,7 @@ class DisplayMetrics:
     LETTERS_AND_DIGITS_COLOR = "white"
     FLIP_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 100, 160, 40)
     DRAW_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 150, 160, 40)
+    EVALUATE_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 200, 160, 40)
     IS_FLIPPED = False
     DRAWING_MODE = False
     START_DRAW_POSITION = None
