@@ -2,7 +2,8 @@ import pygame
 import chess
 import math
 from metrics import DisplayMetrics, HistoryOfMoves
-import random
+import chess.engine
+import os
 
 
 class Chess(DisplayMetrics, HistoryOfMoves):
@@ -19,6 +20,43 @@ class Chess(DisplayMetrics, HistoryOfMoves):
     board = chess.Board()
     screen = pygame.display.set_mode((display_board.WIDTH + 50, display_board.HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption(display_board.NAME_OF_THE_BOARD)
+
+    def evaluate_position(self, board):
+        stockfish_path = os.path.join(os.getcwd(), "stockfish", "stockfish/stockfish-windows-x86-64-avx2.exe")
+        with chess.engine.SimpleEngine.popen_uci(stockfish_path) as engine:
+            info = engine.analyse(board, chess.engine.Limit(time=0.5))
+            score = info["score"].relative.score(mate_score=10000)
+            return score
+
+    def convert_score_to_percentage(self, score):
+        if score is None:
+            return 50, 50
+
+        if score > 0:
+            white_percentage = 50 + score / 100
+            black_percentage = 50 - score / 100
+        else:
+            white_percentage = 50 - abs(score) / 100
+            black_percentage = 50 + abs(score) / 100
+
+        return white_percentage, black_percentage
+
+    def draw_evaluation_bar(self, board):
+        current_score = self.evaluate_position(board)
+
+        white_percentage, black_percentage = self.convert_score_to_percentage(current_score)
+
+        # Можеш да нарисуваш текста на екрана (с Pygame):
+        font = pygame.font.SysFont(None, 36)
+
+        white_text = font.render(f"White: {white_percentage:.1f}% chance for win", True, (255, 255, 255))
+        black_text = font.render(f"Black: {black_percentage:.1f}% chance for win", True, (0, 0, 0))
+
+        # Разположи текстовете на екрана (напр. горе в ляво):
+        self.screen.blit(white_text, (10, 10))
+        self.screen.blit(black_text, (10, 50))
+
+        pygame.display.flip()
 
     def draw_board(self):
         colors = [pygame.Color(self.display_board.FIRST_COLOR), pygame.Color(self.display_board.SECOND_COLOR)]
@@ -257,6 +295,7 @@ class Chess(DisplayMetrics, HistoryOfMoves):
             self.draw_pieces()
             self.draw_button()
             self.draw_arrows()
+            self.draw_evaluation_bar(self.board)
 
             if self.board.is_checkmate():
                 self.draw_message("Checkmate!", "red")
