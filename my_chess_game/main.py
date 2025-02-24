@@ -90,8 +90,8 @@ class Chess(DisplayMetrics, HistoryOfMoves):
         white_text = font.render(f"White: {white_percentage:.1f}% chance for win", True, (255, 255, 255))
         black_text = font.render(f"Black: {black_percentage:.1f}% chance for win", True, (0, 0, 0))
 
-        self.screen.blit(white_text, (10, 10))
-        self.screen.blit(black_text, (10, 50))
+        self.screen.blit(white_text, (10, 640))
+        self.screen.blit(black_text, (10, 670))
 
         pygame.display.flip()
 
@@ -274,18 +274,14 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                     col = (x - self.display_board.EXTRA_SPACE) // self.display_board.SQUARE_SIZE
                     row = 7 - (y // self.display_board.SQUARE_SIZE)
 
-                    if self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
-                        show_evaluation = not show_evaluation
-
-                    if self.display_board.DRAW_BUTTON.collidepoint(x, y):
-                        self.display_board.drawing_on_board()
-                        self.history_of_moves.arrows = []
-
                     if self.display_board.DRAW_BUTTON.collidepoint(x, y):
                         self.display_board.drawing_on_board()
                         self.history_of_moves.arrows = []
                     elif self.display_board.DRAWING_MODE:
                         self.display_board.START_DRAW_POSITION = event.pos
+
+                    if self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
+                        show_evaluation = not show_evaluation
 
                     if self.display_board.UNDO_BUTTON.collidepoint(x, y):
                         self.history_of_moves.undo_last_move(self.board)
@@ -347,6 +343,7 @@ class Chess(DisplayMetrics, HistoryOfMoves):
             self.draw_pieces()
             self.draw_button()
             self.draw_arrows()
+
             if show_evaluation:
                 self.draw_evaluation_bar(self.board)
 
