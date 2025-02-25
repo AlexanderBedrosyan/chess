@@ -274,6 +274,9 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                     col = (x - self.display_board.EXTRA_SPACE) // self.display_board.SQUARE_SIZE
                     row = 7 - (y // self.display_board.SQUARE_SIZE)
 
+                    if not self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
+                        show_evaluation = False
+
                     if self.display_board.DRAW_BUTTON.collidepoint(x, y):
                         self.display_board.drawing_on_board()
                         self.history_of_moves.arrows = []
