@@ -26,6 +26,7 @@ class DisplayMetrics:
     FLIP_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 100, 160, 40)
     DRAW_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 150, 160, 40)
     EVALUATE_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 200, 160, 40)
+    HISTORY_BUTTON = pygame.Rect(WIDTH - INFO_PANEL_WIDTH + 50, 250, 160, 40)
     IS_FLIPPED = False
     DRAWING_MODE = False
     START_DRAW_POSITION = None
