@@ -49,8 +49,7 @@ class HistoryOfGames:
         matching_games = []
 
         for game in games:
-            fens = self.get_fen_positions(game)
-            if current_fen in fens:
+            if current_fen in game:
                 matching_games.append(game)
 
         return matching_games
