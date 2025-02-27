@@ -9,15 +9,19 @@ class HistoryOfGames:
     PLAYERS = ["magnuscarlsen", "hikaru", "fabianocaruana"]
 
     def find_all_games(self):
+        games = []
         for player in self.PLAYERS:
             response = requests.get(self.URL + player + "/games/2024/01", headers=self.HEADERS)
 
             if response.status_code == 200:
                 data = response.json()
                 for game in data.get("games", []):
+                    games.append(game["pgn"])
                     print(game["pgn"])
             else:
                 print(f"Грешка {response.status_code}: {response.text}")
+
+        return games
 
 
 history_of_games = HistoryOfGames()
