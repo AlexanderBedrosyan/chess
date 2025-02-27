@@ -180,6 +180,13 @@ class Chess(DisplayMetrics, HistoryOfMoves):
         evaluate_text = pygame.font.Font(None, 30).render("Evaluation", True, pygame.Color("white"))
         self.screen.blit(evaluate_text, evaluate_text.get_rect(center=self.display_board.EVALUATE_BUTTON.center))
 
+        history_button = pygame.Color("darkgray") if self.display_board.HISTORY_BUTTON.collidepoint(mouse_x,
+                                                                                                   mouse_y) else pygame.Color(
+            "gray")
+        pygame.draw.rect(self.screen, history_button, self.display_board.HISTORY_BUTTON, border_radius=30)
+        history_button_text = pygame.font.Font(None, 30).render("History", True, pygame.Color("white"))
+        self.screen.blit(history_button_text, history_button_text.get_rect(center=self.display_board.HISTORY_BUTTON.center))
+
     def draw_message(self, message, color="red"):
         font = pygame.font.Font(None, 50)
         text = font.render(message, True, pygame.Color(color))
@@ -273,6 +280,10 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                     x, y = event.pos
                     col = (x - self.display_board.EXTRA_SPACE) // self.display_board.SQUARE_SIZE
                     row = 7 - (y // self.display_board.SQUARE_SIZE)
+
+                    if self.display_board.HISTORY_BUTTON.collidepoint(x, y):
+                        fen = self.board.fen()
+                        print(fen)
 
                     if not self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
                         show_evaluation = False
