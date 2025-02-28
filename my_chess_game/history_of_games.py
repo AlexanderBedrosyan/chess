@@ -10,6 +10,9 @@ class HistoryOfGames:
     URL = "https://api.chess.com/pub/player/"
     PLAYERS = ["magnuscarlsen", "hikaru", "fabianocaruana"]
 
+    def data_preparation(self, data):
+        return data.lstrip('[').rstrip(']')
+
     def find_all_games(self):
         games = []
         for player in self.PLAYERS:
@@ -18,12 +21,21 @@ class HistoryOfGames:
             if response.status_code == 200:
                 data = response.json()
                 for game in data.get("games", []):
+                    print(game)
                     pgn_text = game["pgn"]
+                    print(pgn_text)
+                    data = pgn_text.split('\n')
+                    game_date = self.data_preparation(data[2])
+                    white_player = self.data_preparation(data[4])
+                    black_player = self.data_preparation(data[5])
+                    result = self.data_preparation(data[17])
+                    print(game_date, ' ', white_player, ' ', black_player, ' ', result)
+                    print(pgn_text.split('\n'))
+                    exit()
                     fens = self.get_fen_positions(pgn_text)
                     games.append(fens)
                     # print(game["pgn"])
                     print(fens)
-                    exit()
             else:
                 print(f"Грешка {response.status_code}: {response.text}")
 
