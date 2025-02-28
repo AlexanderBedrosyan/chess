@@ -1,12 +1,14 @@
+from typing import List
 import pygame
 import chess
 import math
 from metrics import DisplayMetrics, HistoryOfMoves
+from history_of_games import HistoryOfGames
 import chess.engine
 import os
 
 
-class Chess(DisplayMetrics, HistoryOfMoves):
+class Chess(DisplayMetrics, HistoryOfMoves, HistoryOfGames):
 
     display_board = DisplayMetrics()
     display_board.transform_symbols_into_image()
@@ -20,6 +22,8 @@ class Chess(DisplayMetrics, HistoryOfMoves):
     board = chess.Board()
     screen = pygame.display.set_mode((display_board.WIDTH + 50, display_board.HEIGHT), pygame.RESIZABLE)
     pygame.display.set_caption(display_board.NAME_OF_THE_BOARD)
+
+    CURRENT_LEGAL_MOVE = None
 
     def evaluate_position(self, board):
         stockfish_path = os.path.join(os.getcwd(), "stockfish", "stockfish/stockfish-windows-x86-64-avx2.exe")
@@ -283,7 +287,9 @@ class Chess(DisplayMetrics, HistoryOfMoves):
 
                     if self.display_board.HISTORY_BUTTON.collidepoint(x, y):
                         fen = self.board.fen()
-                        print(fen)
+                        history_data = self.find_matching_games(fen)
+                        for details in history_data:
+                            print(details[0])
 
                     if not self.display_board.EVALUATE_BUTTON.collidepoint(x, y):
                         show_evaluation = False
@@ -313,6 +319,7 @@ class Chess(DisplayMetrics, HistoryOfMoves):
                             if self.board.piece_at(square):
                                 selected_square = square
                                 legal_moves = [move for move in self.board.legal_moves if move.from_square == square]
+                                self.CURRENT_LEGAL_MOVE = [self.board.san(m) for m in legal_moves]
                                 print(
                                     f"Позволени ходове за {self.board.piece_at(square)}: {[self.board.san(m) for m in legal_moves]}"
                                 )
@@ -328,7 +335,8 @@ class Chess(DisplayMetrics, HistoryOfMoves):
 
                         else:
                             move = chess.Move(selected_square, square)
-                            if move.to_square // 8 == 0 or move.to_square // 8 == 7:
+                            current_move = 'gx' + str(move)[2:4] + '=B'
+                            if (move.to_square // 8 == 0 or move.to_square // 8 == 7) and current_move in self.CURRENT_LEGAL_MOVE:
                                 self.board.push(move)
                                 piece = self.board.piece_at(square)
 

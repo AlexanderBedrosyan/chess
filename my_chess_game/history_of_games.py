@@ -10,6 +10,9 @@ class HistoryOfGames:
     URL = "https://api.chess.com/pub/player/"
     PLAYERS = ["magnuscarlsen", "hikaru", "fabianocaruana"]
 
+    def data_preparation(self, data):
+        return data.lstrip('[').rstrip(']')
+
     def find_all_games(self):
         games = []
         for player in self.PLAYERS:
@@ -19,11 +22,19 @@ class HistoryOfGames:
                 data = response.json()
                 for game in data.get("games", []):
                     pgn_text = game["pgn"]
+                    data = pgn_text.split('\n')
+                    game_date = self.data_preparation(data[2])
+                    white_player = self.data_preparation(data[4])
+                    black_player = self.data_preparation(data[5])
+                    result = self.data_preparation(data[17])
                     fens = self.get_fen_positions(pgn_text)
-                    games.append(fens)
-                    # print(game["pgn"])
-                    print(fens)
-                    exit()
+
+                    games.append(({
+                        "game_date": game_date,
+                        "white_player": white_player,
+                        "black_player": black_player,
+                        "result": result
+                           }, fens))
             else:
                 print(f"Грешка {response.status_code}: {response.text}")
 
@@ -49,13 +60,12 @@ class HistoryOfGames:
         matching_games = []
 
         for game in games:
-            if current_fen in game:
+            if current_fen in game[1]:
                 matching_games.append(game)
 
         return matching_games
 
 
-history_of_games = HistoryOfGames()
-print(history_of_games.find_all_games())
-current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-print(history_of_games.find_matching_games(current_fen))
+# history_of_games = HistoryOfGames()
+# current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+# print(history_of_games.find_matching_games(current_fen))
