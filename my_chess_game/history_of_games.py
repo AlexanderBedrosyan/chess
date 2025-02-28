@@ -66,6 +66,6 @@ class HistoryOfGames:
         return matching_games
 
 
-history_of_games = HistoryOfGames()
-current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-print(history_of_games.find_matching_games(current_fen))
+# history_of_games = HistoryOfGames()
+# current_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+# print(history_of_games.find_matching_games(current_fen))
