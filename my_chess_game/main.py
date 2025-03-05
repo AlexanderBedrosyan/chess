@@ -342,7 +342,6 @@ class Chess(DisplayMetrics, HistoryOfMoves, HistoryOfGames):
 
                                 if piece and piece.symbol() in ('p', 'P'):
                                     self.show_promotion_menu(move.to_square, piece.color)
-                                    # self.handle_promotion(square, current_pieces)
 
                             if move in self.board.legal_moves:
                                 self.board.push(move)
