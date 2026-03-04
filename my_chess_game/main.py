@@ -18,11 +18,22 @@ from history_of_games import HistoryOfGames
 from metrics import Colors, HistoryOfMoves, Layout
 
 # ─────────────────────────────────────────────────────────────
+# Resource path – works both in dev and when frozen by PyInstaller
+# ─────────────────────────────────────────────────────────────
+def resource_path(relative: str) -> str:
+    """Return absolute path to a bundled file, works dev + frozen."""
+    import sys
+    base = getattr(sys, "_MEIPASS",
+                   os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relative)
+
+
+# ─────────────────────────────────────────────────────────────
 # Path to Stockfish
 # ─────────────────────────────────────────────────────────────
-STOCKFISH_PATH = os.path.join(
-    os.getcwd(), "stockfish", "stockfish",
-    "stockfish-windows-x86-64-avx2.exe"
+STOCKFISH_PATH = resource_path(
+    os.path.join("stockfish", "stockfish",
+                 "stockfish-windows-x86-64-avx2.exe")
 )
 
 
@@ -51,17 +62,20 @@ class ChessTrainer:
         pygame.display.set_caption("Chess Trainer")
 
         try:
-            logo = pygame.image.load("pieces/chess-logo.png")
+            logo = pygame.image.load(resource_path("pieces/chess-logo.png"))
             pygame.display.set_icon(
                 pygame.transform.smoothscale(logo, (48, 48))
             )
         except Exception:
             pass
 
-        self.ly = Layout(1140, 740)
-        self.screen = pygame.display.set_mode(
-            (self.ly.screen_w, self.ly.screen_h), pygame.RESIZABLE
-        )
+        # ── start fullscreen; remember desktop resolution ──
+        info = pygame.display.Info()
+        sw, sh = info.current_w, info.current_h
+        self._is_fullscreen = True
+        self.screen = pygame.display.set_mode((sw, sh), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
+
+        self.ly = Layout(sw, sh)
         self.ly.load_images()
 
         # ── game state ──
@@ -219,81 +233,108 @@ class ChessTrainer:
     # ─── Main draw routines ─────────────────────────────────
     def _draw_background(self):
         self.screen.fill(Colors.BG)
+        # Right panel
         panel_rect = pygame.Rect(
-            self.ly.panel_x - 2, 0, self.ly.panel_w + self.ly.H_PAD + 2,
-            self.ly.screen_h
+            self.ly.panel_x, 0, self.ly.panel_w, self.ly.screen_h
         )
         draw_rounded_rect(self.screen, Colors.PANEL, panel_rect, radius=0)
         pygame.draw.line(
             self.screen, Colors.PANEL_BORDER,
-            (self.ly.panel_x - 2, 0),
-            (self.ly.panel_x - 2, self.ly.screen_h), 1
+            (self.ly.panel_x, 0), (self.ly.panel_x, self.ly.screen_h), 1
         )
 
     def _draw_player_bars(self):
-        """Top (Black) and bottom (White) player name + win-% bar."""
+        """Full-width top (Black) and bottom (White) bars with win-% strip."""
         ly = self.ly
-        bw = ly.panel_w - 20
+        sw = ly.screen_w
         bar_h = 7
-        bar_x = ly.panel_x + 10
-        font_sz = max(13, ly.sq // 5)
+        pad = ly.H_PAD
+        font_sz = max(14, min(22, ly.sq // 4))
 
         for is_black in (True, False):
             if is_black:
                 pr = ly.black_bar_rect
-                label = "\u265f Black"
+                label = "\u265f  Black"
                 pct = self.black_pct
+                adv = self.white_pct < self.black_pct
                 fill_col = Colors.EVAL_BLACK
                 bg_col   = Colors.EVAL_WHITE
             else:
                 pr = ly.white_bar_rect
-                label = "\u2659 White"
+                label = "\u2659  White"
                 pct = self.white_pct
+                adv = self.white_pct >= self.black_pct
                 fill_col = Colors.EVAL_WHITE
                 bg_col   = Colors.EVAL_BLACK
 
             draw_rounded_rect(self.screen, Colors.PANEL_SECTION, pr, radius=0)
-            self._draw_text(label, font_sz, Colors.TEXT_PRIMARY, bar_x, pr.top + 6)
-            self._draw_text(f"{pct:.1f}% win", font_sz, Colors.TEXT_SECOND,
-                            pr.right - 10, pr.top + 6, anchor="topright")
 
-            bar_y = pr.bottom - bar_h - 4
-            bg_bar = pygame.Rect(bar_x, bar_y, bw, bar_h)
-            draw_rounded_rect(self.screen, bg_col, bg_bar, radius=3)
-            fill_w = int(bw * pct / 100)
-            draw_rounded_rect(self.screen, fill_col,
-                              pygame.Rect(bar_x, bar_y, fill_w, bar_h), radius=3)
+            # Name
+            self._draw_text(label, font_sz, Colors.TEXT_PRIMARY, pad, pr.top + 6)
+
+            # Advantage badge
+            if adv:
+                adv_txt = f"+{abs(pct - 50):.0f}%"
+                badge_col = Colors.BEST if abs(pct - 50) > 10 else Colors.GOOD
+                self._draw_text(adv_txt, max(12, font_sz - 4), badge_col,
+                                pad + 160, pr.top + 8)
+
+            # Win % label – right side
+            self._draw_text(f"{pct:.1f}% win", font_sz, Colors.TEXT_SECOND,
+                            sw - pad, pr.top + 6, anchor="topright")
+
+            # Colour-coded progress bar across full width
+            bar_y = pr.bottom - bar_h - 2
+            bg_bar = pygame.Rect(0, bar_y, sw, bar_h)
+            draw_rounded_rect(self.screen, bg_col, bg_bar, radius=0)
+            fill_w = int(sw * pct / 100)
+            if not is_black:
+                draw_rounded_rect(self.screen, fill_col,
+                                  pygame.Rect(0, bar_y, fill_w, bar_h), radius=0)
+            else:
+                # Black bar fills from the right
+                fill_w_b = int(sw * pct / 100)
+                draw_rounded_rect(self.screen, fill_col,
+                                  pygame.Rect(sw - fill_w_b, bar_y, fill_w_b, bar_h), radius=0)
 
     def _draw_eval_bar(self):
-        """Vertical evaluation bar left of the board."""
+        """Horizontal evaluation bar inside the right panel."""
         ly = self.ly
-        bar_rect = pygame.Rect(ly.eval_x, ly.eval_y, ly.EVAL_BAR_W, ly.eval_h)
-        draw_rounded_rect(self.screen, Colors.EVAL_BLACK, bar_rect, radius=4)
+        bar = ly.eval_bar_rect
+        if bar.height < 4:
+            return
 
-        fill_h = int(ly.eval_h * self.white_pct / 100)
-        fill_rect = pygame.Rect(
-            ly.eval_x, ly.eval_y + ly.eval_h - fill_h,
-            ly.EVAL_BAR_W, fill_h
-        )
-        draw_rounded_rect(self.screen, Colors.EVAL_WHITE, fill_rect, radius=4)
+        # Full background = black side
+        draw_rounded_rect(self.screen, Colors.EVAL_BLACK, bar, radius=4)
 
+        # White portion from the right
+        white_w = int(bar.width * self.white_pct / 100)
+        white_rect = pygame.Rect(bar.right - white_w, bar.top, white_w, bar.height)
+        draw_rounded_rect(self.screen, Colors.EVAL_WHITE, white_rect, radius=4)
+
+        # Score text above bar
         if self.eval_score is not None:
             cp = self.eval_score
             if abs(cp) >= 29000:
-                score_txt = "M" + ("+" if cp > 0 else "-")
+                score_txt = "Mate" + ("+" if cp > 0 else "-")
             elif cp > 0:
                 score_txt = f"+{cp/100:.1f}"
             else:
                 score_txt = f"{cp/100:.1f}"
-            label_y = ly.eval_y + ly.eval_h // 2
-            s = self.font(max(10, ly.EVAL_BAR_W - 2)).render(score_txt, True, Colors.TEXT_SECOND)
-            r = s.get_rect(centerx=ly.eval_x + ly.EVAL_BAR_W // 2, centery=label_y)
-            self.screen.blit(s, r)
+        else:
+            score_txt = "eval"
+
+        self._draw_text("ENGINE EVAL", max(10, bar.height - 2), Colors.TEXT_SECOND,
+                        bar.left, bar.top - 18)
+        self._draw_text(score_txt, max(10, bar.height + 2), Colors.TEXT_PRIMARY,
+                        bar.right, bar.top - 18, anchor="topright")
 
     def _draw_board(self):
-        """Draw squares, rank/file labels, highlights."""
+        """Draw squares with Lichess-style coords inside corner squares."""
         ly = self.ly
-        colors = [pygame.Color(Colors.LIGHT_SQ), pygame.Color(Colors.DARK_SQ)]
+        sq_colors = [pygame.Color(Colors.LIGHT_SQ), pygame.Color(Colors.DARK_SQ)]
+        coord_sz = max(9, ly.sq // 7)
+        pad = 2
 
         for sq in chess.SQUARES:
             r, c = divmod(sq, 8)
@@ -304,9 +345,32 @@ class ChessTrainer:
             px = ly.board_x + vc * ly.sq
             py = ly.board_y + (7 - vr) * ly.sq
             sq_rect = pygame.Rect(px, py, ly.sq, ly.sq)
+            base_col = sq_colors[(r + c) % 2]
 
-            pygame.draw.rect(self.screen, colors[(r + c) % 2], sq_rect)
+            pygame.draw.rect(self.screen, base_col, sq_rect)
 
+            # ── Coordinate labels inside corner squares ──
+            coord_col = sq_colors[1 - (r + c) % 2]   # contrasting
+            if not ly.IS_FLIPPED:
+                show_rank = (c == 0)   # leftmost column
+                show_file = (r == 0)   # bottom row
+                rank_lbl  = str(r + 1)
+                file_lbl  = chr(65 + c)
+            else:
+                show_rank = (c == 7)
+                show_file = (r == 7)
+                rank_lbl  = str(8 - r)
+                file_lbl  = chr(65 + 7 - c)
+
+            if show_rank:
+                s = self.font(coord_sz).render(rank_lbl, True, coord_col)
+                self.screen.blit(s, (px + pad, py + pad))
+            if show_file:
+                s = self.font(coord_sz).render(file_lbl, True, coord_col)
+                self.screen.blit(s, (px + ly.sq - s.get_width() - pad,
+                                     py + ly.sq - s.get_height() - pad))
+
+            # ── Highlights ──
             if self.last_move and sq in (self.last_move.from_square,
                                           self.last_move.to_square):
                 s = pygame.Surface((ly.sq, ly.sq), pygame.SRCALPHA)
@@ -332,18 +396,6 @@ class ChessTrainer:
                     pygame.draw.circle(dot_s, (*Colors.HIGHLIGHT_SQ[:3], 160),
                                        (r_dot, r_dot), r_dot)
                     self.screen.blit(dot_s, (cx - r_dot, cy - r_dot))
-
-        for rank in range(8):
-            num = str(8 - rank) if not ly.IS_FLIPPED else str(rank + 1)
-            s = self.font(max(11, ly.sq // 6)).render(num, True, Colors.TEXT_SECOND)
-            self.screen.blit(s, (ly.eval_x + ly.EVAL_BAR_W + 2,
-                                  ly.board_y + rank * ly.sq + 3))
-
-        for col in range(8):
-            letter = chr(65 + col) if not ly.IS_FLIPPED else chr(65 + 7 - col)
-            s = self.font(max(11, ly.sq // 6)).render(letter, True, Colors.TEXT_SECOND)
-            self.screen.blit(s, (ly.board_x + col * ly.sq + ly.sq // 2 - 5,
-                                  ly.board_y + ly.board_px + 3))
 
     def _draw_pieces(self):
         ly = self.ly
@@ -505,7 +557,7 @@ class ChessTrainer:
 
     def _draw_status(self):
         ly = self.ly
-        y = ly.V_PAD + 10
+        y = ly.PLAYER_BAR_H + ly.V_PAD + 4
         if self.board.is_checkmate():
             winner = "Black" if self.board.turn == chess.WHITE else "White"
             msg, col = f"\u265a Checkmate! {winner} wins", Colors.BLUNDER
@@ -699,6 +751,24 @@ class ChessTrainer:
                     self.selected_sq   = None
                     self.legal_targets = []
 
+    def _toggle_fullscreen(self, force_windowed: bool = False):
+        if force_windowed or self._is_fullscreen:
+            self._is_fullscreen = False
+            self.screen = pygame.display.set_mode(
+                (1280, 800), pygame.RESIZABLE
+            )
+            sw, sh = 1280, 800
+        else:
+            self._is_fullscreen = True
+            info = pygame.display.Info()
+            sw, sh = info.current_w, info.current_h
+            self.screen = pygame.display.set_mode(
+                (sw, sh), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF
+            )
+        self._font_cache.clear()
+        self.ly.update(sw, sh)
+        self.ly.load_images()
+
     def run(self):
         running = True
         while running:
@@ -728,13 +798,14 @@ class ChessTrainer:
                     running = False
 
                 elif event.type == pygame.VIDEORESIZE:
-                    new_w, new_h = max(640, event.w), max(480, event.h)
-                    self.screen = pygame.display.set_mode(
-                        (new_w, new_h), pygame.RESIZABLE
-                    )
-                    self._font_cache.clear()
-                    self.ly.update(new_w, new_h)
-                    self.ly.load_images()
+                    if not self._is_fullscreen:
+                        new_w, new_h = max(800, event.w), max(600, event.h)
+                        self.screen = pygame.display.set_mode(
+                            (new_w, new_h), pygame.RESIZABLE
+                        )
+                        self._font_cache.clear()
+                        self.ly.update(new_w, new_h)
+                        self.ly.load_images()
 
                 elif event.type == pygame.MOUSEBUTTONDOWN:
                     if event.button == 1:
@@ -764,10 +835,16 @@ class ChessTrainer:
                             self.last_move = self.board.peek() if self.board.move_stack else None
                     elif event.key == pygame.K_f:
                         self.ly.toggle_flip()
+                    elif event.key == pygame.K_F11:
+                        self._toggle_fullscreen()
                     elif event.key == pygame.K_ESCAPE:
-                        self.show_pro_games = False
-                        self.selected_sq    = None
-                        self.legal_targets  = []
+                        if self.show_pro_games:
+                            self.show_pro_games = False
+                        elif self.selected_sq is not None:
+                            self.selected_sq    = None
+                            self.legal_targets  = []
+                        else:
+                            self._toggle_fullscreen(force_windowed=True)
 
             self._draw_background()
             self._draw_eval_bar()

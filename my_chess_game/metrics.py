@@ -1,6 +1,14 @@
 from __future__ import annotations
 from typing import Optional
+import os, sys
 import pygame
+
+
+def _resource_path(relative: str) -> str:
+    """Resolve path to a bundled resource (dev or frozen exe)."""
+    base = getattr(sys, "_MEIPASS",
+                   os.path.dirname(os.path.abspath(__file__)))
+    return os.path.join(base, relative)
 
 
 # ─────────────────────────────────────────────
@@ -51,28 +59,28 @@ class Colors:
 # Dynamic Layout – recomputed on every resize
 # ─────────────────────────────────────────────
 class Layout:
-    EVAL_BAR_W  = 16
-    COORD_W     = 22
-    COORD_H     = 22
-    H_PAD       = 10
-    V_PAD       = 10
-    MIN_PANEL_W = 260
-    MAX_PANEL_W = 370
-    NAME        = "Chess Trainer – Educational"
+    # No separate left-side eval bar – coords live inside squares now
+    PLAYER_BAR_H = 44
+    H_PAD        = 12
+    V_PAD        = 8
+    MIN_PANEL_W  = 270
+    MAX_PANEL_W  = 380
+    NAME         = "Chess Trainer – Educational"
     PIECE_SYMBOLS = ['r','n','b','q','k','p','wR','wN','wB','wQ','wK','wP']
-    LOGO_SIZE   = 48
+    LOGO_SIZE    = 48
 
-    def __init__(self, screen_w: int = 1140, screen_h: int = 740):
+    def __init__(self, screen_w: int = 1440, screen_h: int = 900):
         self.PIECE_IMAGES: dict = {}
-        self.IS_FLIPPED   = False
-        self.DRAWING_MODE = False
+        self.IS_FLIPPED    = False
+        self.DRAWING_MODE  = False
         self.START_DRAW_POS = None
         self.update(screen_w, screen_h)
 
     # ── images must be loaded AFTER pygame.init() ──
     def load_images(self):
         for sym in self.PIECE_SYMBOLS:
-            raw = pygame.image.load(f"pieces/{sym}.svg").convert_alpha()
+            path = _resource_path(os.path.join("pieces", f"{sym}.svg"))
+            raw = pygame.image.load(path).convert_alpha()
             self.PIECE_IMAGES[sym] = pygame.transform.smoothscale(
                 raw, (self.piece_px, self.piece_px)
             )
@@ -82,13 +90,21 @@ class Layout:
         self.screen_w = sw
         self.screen_h = sh
 
-        # Panel
-        panel_w = max(self.MIN_PANEL_W, min(self.MAX_PANEL_W, int(sw * 0.28)))
-        self.panel_w = panel_w
+        # Panel – right side
+        panel_w = max(self.MIN_PANEL_W, min(self.MAX_PANEL_W, int(sw * 0.26)))
+        self.panel_w  = panel_w
+        self.panel_x  = sw - panel_w
+        self.panel_y  = 0
+        self.panel_h  = sh
 
-        # Board
-        avail_w = sw - panel_w - self.H_PAD * 4 - self.EVAL_BAR_W - self.COORD_W
-        avail_h = sh - self.V_PAD * 2 - self.COORD_H - 40   # 40 for player label rows
+        # Board – centered in the space left of the panel
+        area_x1 = self.H_PAD
+        area_x2 = self.panel_x - self.H_PAD
+        area_y1 = self.PLAYER_BAR_H + self.V_PAD
+        area_y2 = sh - self.PLAYER_BAR_H - self.V_PAD
+
+        avail_w = area_x2 - area_x1
+        avail_h = area_y2 - area_y1
         bp = min(avail_w, avail_h)
         bp = max(240, bp)
         bp = (bp // 8) * 8
@@ -96,46 +112,44 @@ class Layout:
         self.sq       = bp // 8
         self.piece_px = int(self.sq * 0.88)
 
-        # Positions
-        self.eval_x  = self.H_PAD
-        self.eval_y  = self.V_PAD + 40          # below black-player label
-        self.eval_h  = bp
-
-        self.board_x = self.H_PAD + self.EVAL_BAR_W + self.COORD_W
-        self.board_y = self.V_PAD + 40
-
-        self.panel_x = sw - panel_w - self.H_PAD
-        self.panel_y = 0
-        self.panel_h = sh
+        # Centre the board in the available area
+        self.board_x = area_x1 + (avail_w - bp) // 2
+        self.board_y = area_y1 + (avail_h - bp) // 2
 
         # ── buttons (from bottom up) ──
         bx = self.panel_x + 10
         bw = panel_w - 20
-        bh = 36
+        bh = max(34, min(42, sh // 20))
         by = sh - 10
 
         self.btn_undo    = pygame.Rect(bx,               by - bh,       bw // 2 - 4, bh)
         self.btn_flip    = pygame.Rect(bx + bw // 2 + 4, by - bh,       bw // 2 - 4, bh)
-        by -= bh + 8
+        by -= bh + 6
 
         self.btn_draw    = pygame.Rect(bx,               by - bh,       bw // 2 - 4, bh)
         self.btn_evaluate= pygame.Rect(bx + bw // 2 + 4, by - bh,       bw // 2 - 4, bh)
-        by -= bh + 8
+        by -= bh + 6
 
         self.btn_suggest = pygame.Rect(bx,               by - bh,       bw,          bh)
-        by -= bh + 8
+        by -= bh + 6
 
         self.btn_history = pygame.Rect(bx,               by - bh,       bw,          bh)
-        by -= bh + 8
+        by -= bh + 6
 
         self.btn_newgame = pygame.Rect(bx,               by - bh,       bw,          bh)
-        by -= bh + 16
+        by -= bh + 14
 
-        # ── sub-regions inside panel ──
-        self.black_bar_rect = pygame.Rect(self.panel_x, 0,       panel_w, 44)
-        self.white_bar_rect = pygame.Rect(self.panel_x, sh - 44, panel_w, 44)
+        # ── player name bars (full width) ──
+        self.black_bar_rect = pygame.Rect(0, 0,       sw, self.PLAYER_BAR_H)
+        self.white_bar_rect = pygame.Rect(0, sh - self.PLAYER_BAR_H, sw, self.PLAYER_BAR_H)
 
-        hist_top = self.black_bar_rect.bottom + 6
+        # ── eval bar (horizontal, inside panel, below black bar) ──
+        eval_bar_h = max(10, min(16, sh // 55))
+        eval_top   = self.PLAYER_BAR_H + 6
+        self.eval_bar_rect = pygame.Rect(self.panel_x + 8, eval_top, panel_w - 16, eval_bar_h)
+
+        # ── move history ──
+        hist_top = self.eval_bar_rect.bottom + 28
         hist_bot = self.btn_newgame.top - 10
         self.history_rect = pygame.Rect(
             self.panel_x + 8, hist_top,
