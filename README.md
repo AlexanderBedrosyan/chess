@@ -203,7 +203,7 @@ cd my_chess_game
 build.bat
 ```
 
-The script performs four steps:
+The script performs four steps to start the app:
 
 1. Upgrades PyInstaller inside the venv.
 2. Runs PyInstaller using `chess_trainer.spec` → output in `dist\chess_trainer\`.
